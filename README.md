@@ -16,3 +16,6 @@ Straightforward script that generates a csv with a list of all disabled users in
 
  # Grant_local_admin
 Add user to the local Administrator group granting them admin access to their machine. Must reboot before changes can take effect.
+
+ # Process_mmonitor
+PowerShell equivelant of the " top " command in Linux shell.

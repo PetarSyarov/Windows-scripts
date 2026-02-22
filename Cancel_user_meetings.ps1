@@ -11,14 +11,14 @@ Connect-ExchangeOnline -DisableWAM
 Get-Mailbox -Identity user.name@company.com
 
 # Preview meetings
-Remove-CalendarEvents -Identity user.name@delasport.com `
+Remove-CalendarEvents -Identity user.name@domain.com `
   -CancelOrganizedMeetings:$true `
   -QueryStartDate (Get-Date).AddDays(-300) `
   -QueryWindowInDays 1500 `
   -PreviewOnly
 
 # Cancel meetings
-Remove-CalendarEvents -Identity user.name@delasport.com `
+Remove-CalendarEvents -Identity user.name@domain.com `
   -CancelOrganizedMeetings:$true `
   -QueryStartDate (Get-Date).AddDays(-300) `
   -QueryWindowInDays 1500

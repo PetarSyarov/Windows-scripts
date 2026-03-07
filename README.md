@@ -1,5 +1,5 @@
  # --------------------------------------------
- # Explanation for each script in this repo
+ # Scripts
  # --------------------------------------------
 
  # Cancel_O365_group_meetings

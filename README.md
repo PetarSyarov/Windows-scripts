@@ -16,3 +16,6 @@ Straightforward script that generates a csv with a list of all disabled users in
 
  # Grant_local_admin
 Add user to the local Administrator group granting them admin access to their machine. Must reboot before changes can take effect.
+
+ # Log_finder
+ Quick tool to find logs and crash dumps in C:\ . After scan displays size of folders / subfolders and thte paths.

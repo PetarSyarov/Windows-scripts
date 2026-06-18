@@ -15,9 +15,10 @@ $minSizeBytes = $MinSizeMB * 1MB
 $logFolderNames = @("Log", "Logs", "LogFiles", "Logging")
 $dumpExtensions = @(".dmp", ".mdmp")
 
-# Exclusion
+
 $excludedRoot = "C:\Windows"
 $excludedRoot = "C:\ProgramData"
+$excludedRoot = "C:\Users"
 
 $logFoldersFound = 0
 $logFilesFound = 0

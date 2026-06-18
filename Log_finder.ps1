@@ -4,12 +4,20 @@ param(
     [int]$OlderThanMonths = 3
 )
 
+Write-Host "Starting scan on $Path ..."
+Write-Host "Min Size: $MinSizeMB MB | Older Than: $OlderThanMonths months"
+Write-Host ""
+
 $startTime = Get-Date
 $cutoffDate = (Get-Date).AddMonths(-$OlderThanMonths)
 $minSizeBytes = $MinSizeMB * 1MB
 
 $logFolderNames = @("Log", "Logs", "LogFiles", "Logging")
 $dumpExtensions = @(".dmp", ".mdmp")
+
+# Exclusion
+$excludedRoot = "C:\Windows"
+$excludedRoot = "C:\ProgramData"
 
 $logFoldersFound = 0
 $logFilesFound = 0
@@ -18,17 +26,25 @@ $dumpFilesFound = 0
 $totalSizeBytes = 0
 $accessDeniedPaths = 0
 
+Write-Host "Scanning directory tree... (this may take a while)"
+
 try {
-    $allFolders = Get-ChildItem -Path $Path -Directory -Recurse -ErrorAction SilentlyContinue
+    $allFolders = Get-ChildItem -Path $Path -Directory -Recurse -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notlike "$excludedRoot*" }
 }
 catch {
     Write-Host "Failed to scan root path: $Path"
     exit 1
 }
 
-$logFolders = $allFolders | Where-Object { $logFolderNames -contains $_.Name }
+$logFolders = $allFolders | Where-Object {
+    $logFolderNames -contains $_.Name -and
+    $_.FullName -notlike "$excludedRoot*"
+}
 
 foreach ($folder in $logFolders) {
+    Write-Host "Checking log folder: $($folder.FullName)"
+
     try {
         $matchingFiles = Get-ChildItem -Path $folder.FullName -File -Recurse -ErrorAction SilentlyContinue |
             Where-Object {
@@ -41,7 +57,7 @@ foreach ($folder in $logFolders) {
         continue
     }
 
-    if ($matchingFiles.Count -gt 0) {
+    if (@($matchingFiles).Count -gt 0) {
         $folderSizeBytes = ($matchingFiles | Measure-Object Length -Sum).Sum
         $folderSizeMB = [math]::Round($folderSizeBytes / 1MB, 2)
 
@@ -56,14 +72,14 @@ foreach ($folder in $logFolders) {
         $largestFileMB = [math]::Round($largestFile.Length / 1MB, 2)
 
         $logFoldersFound++
-        $logFilesFound += $matchingFiles.Count
+        $logFilesFound += @($matchingFiles).Count
         $totalSizeBytes += $folderSizeBytes
 
         Write-Host ""
         Write-Host "LOG FOLDER REPORT"
         Write-Host "========================================="
         Write-Host "Folder       : $($folder.FullName)"
-        Write-Host "Files Found  : $($matchingFiles.Count)"
+        Write-Host "Files Found  : $(@($matchingFiles).Count)"
         Write-Host "Total Size   : $folderSizeMB MB"
         Write-Host "Oldest File  : $($oldestFile.LastWriteTime.ToString('yyyy-MM-dd'))"
         Write-Host "Largest File : $($largestFile.Name) ($largestFileMB MB)"
@@ -71,11 +87,15 @@ foreach ($folder in $logFolders) {
     }
 }
 
+Write-Host ""
+Write-Host "Scanning for dump files..."
+
 $dumpGroups = @{}
 
 try {
     $dumpFiles = Get-ChildItem -Path $Path -File -Recurse -ErrorAction SilentlyContinue |
         Where-Object {
+            $_.FullName -notlike "$excludedRoot*" -and
             $dumpExtensions -contains $_.Extension.ToLower() -and
             $_.Length -gt $minSizeBytes -and
             $_.LastWriteTime -lt $cutoffDate
@@ -99,7 +119,7 @@ foreach ($dump in $dumpFiles) {
 foreach ($folderPath in $dumpGroups.Keys) {
     $files = $dumpGroups[$folderPath]
 
-    if ($files.Count -gt 0) {
+    if (@($files).Count -gt 0) {
         $folderSizeBytes = ($files | Measure-Object Length -Sum).Sum
         $folderSizeMB = [math]::Round($folderSizeBytes / 1MB, 2)
 
@@ -114,14 +134,14 @@ foreach ($folderPath in $dumpGroups.Keys) {
         $largestFileMB = [math]::Round($largestFile.Length / 1MB, 2)
 
         $dumpFoldersFound++
-        $dumpFilesFound += $files.Count
+        $dumpFilesFound += @($files).Count
         $totalSizeBytes += $folderSizeBytes
 
         Write-Host ""
         Write-Host "CRASH DUMP REPORT"
         Write-Host "========================================="
         Write-Host "Folder       : $folderPath"
-        Write-Host "Files Found  : $($files.Count)"
+        Write-Host "Files Found  : $(@($files).Count)"
         Write-Host "Total Size   : $folderSizeMB MB"
         Write-Host "Oldest File  : $($oldestFile.LastWriteTime.ToString('yyyy-MM-dd'))"
         Write-Host "Largest File : $($largestFile.Name) ($largestFileMB MB)"
